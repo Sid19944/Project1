@@ -188,25 +188,24 @@ const refreshAccessToken = AsyncHandler(async (req, res) => {
       secure: true,
     };
 
-    const { newRefreshToken: refreshToken, accessToken } =
+    const {refreshToken, accessToken } =
       await generateAccessAndRefreshToken(user._id);
 
     return res
       .status(httpStatus.OK)
       .cookie("accessToken", accessToken, cookieOption)
-      .cookie("refreshToken", newRefreshToken, cookieOption)
+      .cookie("refreshToken", refreshToken, cookieOption)
       .json(
         new ApiResponse(
           200,
-          { accessToken, refreshToken: newRefreshToken },
+          { accessToken, refreshToken },
           "Access token refreshed"
         )
       );
   } catch (error) {
     throw new ExpressError(
       500,
-      error?.message,
-      "something went wrong while decoding the refreshToken"
+      `${error.message}, something went wrong while decoding the refreshToken`
     );
   }
 });

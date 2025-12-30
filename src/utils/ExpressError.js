@@ -1,9 +1,9 @@
 class ExpressError extends Error {
-  constructor(status,errors=[], message = "Something Went Wrong") {
+  constructor(status, message = "Something Went Wrong") {
     super();
     this.status = status;
     this.message = message;
-    this.errors = errors;
+    // this.errors = errors;
     this.suceess = false;
   }
 }
