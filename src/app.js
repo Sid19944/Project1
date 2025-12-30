@@ -6,12 +6,14 @@ const app = express();
 app.use(
   cors({
     origin: process.env.CORS_ORIGIN,
-    Credential: true,
+    credentials: true,
   })
 );
-app.use(express.json({ limit: "40kb" }));
+
+
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static("public"));
+app.use(express.static("./public"));
 app.use(cookieParser());
 
 // routes import routes
@@ -19,6 +21,7 @@ import userRouter from "./routes/user.routes.js"
 
 // routes declaration
 app.use("/api/v1/users", userRouter)
+
 
 
 export { app };
