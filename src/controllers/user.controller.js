@@ -248,25 +248,28 @@ const changeFullName = AsyncHandler(async (req, res) => {
     .json(new ApiResponse(200, {}, "FullName updated successfully"));
 });
 
-// const changeEmail = AsyncHandler(async (req, res) => {
-//   const { email, password } = req.body;
-//   if (!(email || password)) {
-//     throw new ExpressError(400, "email and password are required");
-//   }
+const changeEmail = AsyncHandler(async (req, res) => {
+  const { email, password } = req.body;
+  if (!(email || password)) {
+    throw new ExpressError(400, "email and password are required");
+  }
 
-//   const user = await User.findById(req.user._id);
-//   const isPasswordCorrect = await user.isPasswordCorrect(password);
-//   if (!isPasswordCorrect) {
-//     throw new ExpressError(
-//       400,
-//       "Invalid password, Please enter correct password"
-//     );
-//   }
-//   await User.findByIdAndUpdate(req.user._id, { $set: { email: email } });
-//   return res
-//     .status(200)
-//     .json(new ApiResponse(200, {}, "email updated successfully"));
-// });
+  const user = await User.findById(req.user._id);
+  const isPasswordCorrect = await user.isPasswordCorrect(password);
+  if (!isPasswordCorrect) {
+    throw new ExpressError(
+      400,
+      "Invalid password, Please enter correct password"
+    );
+  }
+  if(email.toLowerCase() === user.email){
+    throw new ExpressError(400,"You have entered same last email, please enter new email id.")
+  }
+  await User.findByIdAndUpdate(req.user._id, { $set: { email: email.toLowerCase() } });
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "email updated successfully"));
+});
 
 export {
   registerUser,
@@ -275,5 +278,5 @@ export {
   refreshAccessToken,
   changeCurrentPassword,
   changeFullName,
-  // changeEmail
+  changeEmail
 };
