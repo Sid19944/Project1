@@ -8,6 +8,7 @@ import {
   updateEmail,
   updateAvatar,
   updateCoverImage,
+  getCurrentUser,
 } from "../controllers/user.controller.js";
 import { upload } from "../middleware/multer.middleware.js";
 import { verifyJwt } from "../middleware/auth.middleware.js";
@@ -32,6 +33,7 @@ router.route("/login").post(loginUser);
 //secure route
 router.route("/logout").post(verifyJwt, logoutUser);
 router.route("/refresh-token").post(refreshAccessToken);
+router.route("/get-current-user").post(verifyJwt,getCurrentUser);
 router.route("/update-password").post(verifyJwt, updateCurrentPassword);
 router.route("/update-fullname").post(verifyJwt, updateFullName);
 router.route("/update-email").post(verifyJwt, updateEmail);

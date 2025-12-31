@@ -215,6 +215,14 @@ const refreshAccessToken = AsyncHandler(async (req, res) => {
   }
 });
 
+const getCurrentUser = AsyncHandler(async (req, res) => {
+  const user = req.user;
+  if (!user) {
+    throw new ExpressError(400, "User not found, Please login again");
+  }
+  return res.status(200).json(new ApiResponse(200, user, "Current user found"));
+});
+
 const updateCurrentPassword = AsyncHandler(async (req, res) => {
   const { oldPassword, newPassword } = req.body;
   if (!oldPassword && !newPassword) {
@@ -332,6 +340,7 @@ export {
   loginUser,
   logoutUser,
   refreshAccessToken,
+  getCurrentUser,
   updateCurrentPassword,
   updateFullName,
   updateEmail,
