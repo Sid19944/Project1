@@ -1,7 +1,10 @@
 import { AsyncHandler } from "../utils/AsyncHandler.js";
 import { ExpressError } from "../utils/ExpressError.js";
 import { User } from "../models/user.model.js";
-import { uploadOnCloudinary } from "../utils/Cloudinary.js";
+import {
+  uploadOnCloudinary,
+  deleteFromCloudinary,
+} from "../utils/Cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import httpStatus from "http-status";
 import jwt from "jsonwebtoken";
@@ -66,8 +69,8 @@ const registerUser = AsyncHandler(async (req, res) => {
   const user = await User.create({
     fullName,
     username: username.toLowerCase(),
-    avatar: avatar.url,
-    coverImage: coverImage?.url || "",
+    avatar: avatar.secure_url,
+    coverImage: coverImage?.secure_url || "",
     email,
     password,
   });
@@ -299,15 +302,17 @@ const updateAvatar = AsyncHandler(async (req, res) => {
     throw new ExpressError(400, "Avatar file is missing");
   }
   const avatar = await uploadOnCloudinary(avatarLocalPath);
-  if (!avatar.url) {
+  // console.log("USER",avatar)
+  if (!avatar.secure_url) {
     throw new ExpressError(400, "Error while uploading avatar file");
   }
 
-  const user = await User.findByIdAndUpdate(
-    req.user._id,
-    { $set: { avatar: avatar.url } },
-    { new: true }
-  ).select("-password");
+  const user = await User.findByIdAndUpdate(req.user._id, {
+    $set: { avatar: avatar.secure_url },
+  }).select("-password");
+
+  await deleteFromCloudinary(user.avatar);
+  user.avatar = avatar.secure_url;
 
   return res
     .status(200)
@@ -320,15 +325,18 @@ const updateCoverImage = AsyncHandler(async (req, res) => {
     throw new ExpressError(400, "CoverImage file is missing");
   }
   const coverImage = await uploadOnCloudinary(coverImageLocalPath);
-  if (!coverImage.url) {
+  if (!coverImage.secure_url) {
     throw new ExpressError(400, "Error while uploading avatar file");
   }
 
-  const user = await User.findByIdAndUpdate(
-    req.user._id,
-    { $set: { coverImage: coverImage.url } },
-    { new: true }
-  ).select("-password");
+  const user = await User.findByIdAndUpdate(req.user._id, {
+    $set: { coverImage: coverImage.secure_url },
+  }).select("-password");
+
+  if (user.coverImage) {
+    await deleteFromCloudinary(user.coverImage);
+    user.coverImage = coverImage.secure_url;
+  }
 
   return res
     .status(200)
