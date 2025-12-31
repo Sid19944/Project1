@@ -11,7 +11,6 @@ const generateAccessAndRefreshToken = async (userId) => {
     const user = await User.findById(userId);
     const accessToken = user.generateAccessToken();
     const refreshToken = user.generateRefreshToken();
-
     user.refreshToken = refreshToken;
     await user.save({ validateBeforeSave: false });
 
@@ -188,8 +187,9 @@ const refreshAccessToken = AsyncHandler(async (req, res) => {
       secure: true,
     };
 
-    const {refreshToken, accessToken } =
-      await generateAccessAndRefreshToken(user._id);
+    const { refreshToken, accessToken } = await generateAccessAndRefreshToken(
+      user._id
+    );
 
     return res
       .status(httpStatus.OK)
@@ -210,4 +210,70 @@ const refreshAccessToken = AsyncHandler(async (req, res) => {
   }
 });
 
-export { registerUser, loginUser, logoutUser, refreshAccessToken };
+const changeCurrentPassword = AsyncHandler(async (req, res) => {
+  const { oldPassword, newPassword } = req.body;
+  if (!oldPassword && !newPassword) {
+    throw new ExpressError(400, `Enter old password and new password`);
+  }
+
+  const user = await User.findById(req.user._id);
+  const isPasswordCorrect = await user.isPasswordCorrect(oldPassword);
+  if (!isPasswordCorrect) {
+    throw new ExpressError(400, "Invalid old Password");
+  }
+  user.password = newPassword;
+  await user.save({ validateBeforeSave: false });
+  return res
+    .status(httpStatus.OK)
+    .json(new ApiResponse(200, {}, "Password Changed Successfully"));
+});
+
+const changeFullName = AsyncHandler(async (req, res) => {
+  const { fullName, password } = req.body;
+  if (!(fullName || password)) {
+    throw new ExpressError(400, "fullName and password are required");
+  }
+
+  const user = await User.findById(req.user._id);
+  const isPasswordCorrect = await user.isPasswordCorrect(password);
+  if (!isPasswordCorrect) {
+    throw new ExpressError(
+      400,
+      "Invalid password, Please enter correct password"
+    );
+  }
+  await User.findByIdAndUpdate(req.user._id, { $set: { fullName: fullName } });
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "FullName updated successfully"));
+});
+
+// const changeEmail = AsyncHandler(async (req, res) => {
+//   const { email, password } = req.body;
+//   if (!(email || password)) {
+//     throw new ExpressError(400, "email and password are required");
+//   }
+
+//   const user = await User.findById(req.user._id);
+//   const isPasswordCorrect = await user.isPasswordCorrect(password);
+//   if (!isPasswordCorrect) {
+//     throw new ExpressError(
+//       400,
+//       "Invalid password, Please enter correct password"
+//     );
+//   }
+//   await User.findByIdAndUpdate(req.user._id, { $set: { email: email } });
+//   return res
+//     .status(200)
+//     .json(new ApiResponse(200, {}, "email updated successfully"));
+// });
+
+export {
+  registerUser,
+  loginUser,
+  logoutUser,
+  refreshAccessToken,
+  changeCurrentPassword,
+  changeFullName,
+  // changeEmail
+};

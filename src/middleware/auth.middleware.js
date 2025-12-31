@@ -33,7 +33,7 @@ export const verifyJwt = AsyncHandler(async (req, res, next) => {
     if (!user) {
       throw new ExpressError(401, "Invalid Access Token");
     }
-    console.log("auth Middle",user)
+    // console.log("auth Middle",user)
 
     req.user = user;
     next();
