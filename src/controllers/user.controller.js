@@ -89,10 +89,15 @@ const loginUser = AsyncHandler(async (req, res) => {
     throw new ExpressError(400, "All feilds are required");
   }
   // find the user in db using the user input details
-  const user = await User.findOne({ $or: [{ username }, { email }] });
+  const user = await User.findOne({
+    $or: [{ username }, { email: email.toLowerCase() }],
+  });
 
   if (!user) {
-    throw new ExpressError(httpStatus.NOT_FOUND, "Invalid UserName or Email.");
+    throw new ExpressError(
+      httpStatus.NOT_ACCEPTABLE,
+      "Invalid UserName or Email."
+    );
   }
 
   const isPasswordValid = await user.isPasswordCorrect(password);
@@ -210,7 +215,7 @@ const refreshAccessToken = AsyncHandler(async (req, res) => {
   }
 });
 
-const changeCurrentPassword = AsyncHandler(async (req, res) => {
+const updateCurrentPassword = AsyncHandler(async (req, res) => {
   const { oldPassword, newPassword } = req.body;
   if (!oldPassword && !newPassword) {
     throw new ExpressError(400, `Enter old password and new password`);
@@ -228,47 +233,77 @@ const changeCurrentPassword = AsyncHandler(async (req, res) => {
     .json(new ApiResponse(200, {}, "Password Changed Successfully"));
 });
 
-const changeFullName = AsyncHandler(async (req, res) => {
+const updateFullName = AsyncHandler(async (req, res) => {
   const { fullName, password } = req.body;
   if (!(fullName || password)) {
     throw new ExpressError(400, "fullName and password are required");
   }
 
-  const user = await User.findById(req.user._id);
-  const isPasswordCorrect = await user.isPasswordCorrect(password);
+  const findUser = await User.findById(req.user._id);
+  const isPasswordCorrect = await findUser.isPasswordCorrect(password);
   if (!isPasswordCorrect) {
     throw new ExpressError(
       400,
       "Invalid password, Please enter correct password"
     );
   }
-  await User.findByIdAndUpdate(req.user._id, { $set: { fullName: fullName } });
+  const user = await User.findByIdAndUpdate(
+    findUser._id,
+    { $set: { fullName: fullName } },
+    { new: true }
+  ).select("-password");
   return res
     .status(200)
-    .json(new ApiResponse(200, {}, "FullName updated successfully"));
+    .json(new ApiResponse(200, user, "FullName updated successfully"));
 });
 
-const changeEmail = AsyncHandler(async (req, res) => {
+const updateEmail = AsyncHandler(async (req, res) => {
   const { email, password } = req.body;
   if (!(email || password)) {
     throw new ExpressError(400, "email and password are required");
   }
 
-  const user = await User.findById(req.user._id);
-  const isPasswordCorrect = await user.isPasswordCorrect(password);
+  const findUser = await User.findById(req.user._id);
+  const isPasswordCorrect = await findUser.isPasswordCorrect(password);
   if (!isPasswordCorrect) {
     throw new ExpressError(
       400,
       "Invalid password, Please enter correct password"
     );
   }
-  if(email.toLowerCase() === user.email){
-    throw new ExpressError(400,"You have entered same last email, please enter new email id.")
+  if (email.toLowerCase() === findUser.email) {
+    throw new ExpressError(
+      400,
+      "You have entered same last email, please enter new email id."
+    );
   }
-  await User.findByIdAndUpdate(req.user._id, { $set: { email: email.toLowerCase() } });
+  const user = await User.findByIdAndUpdate(findUser._id, {
+    $set: { email: email.toLowerCase() },
+  }).select("-password");
   return res
     .status(200)
-    .json(new ApiResponse(200, {}, "email updated successfully"));
+    .json(new ApiResponse(200, user, "email updated successfully"));
+});
+
+const updateAvatar = AsyncHandler(async (req, res) => {
+  const avatarLocalPath = req.file.path;
+  if (!avatarLocalPath) {
+    throw new ExpressError(400, "Avatar file is missing");
+  }
+  const avatar = await uploadOnCloudinary(avatarLocalPath);
+  if (!avatar.url) {
+    throw new ExpressError(400, "Error while uploading avatar file");
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.user._id,
+    { $set: { avatar: avatar.url } },
+    { new: true }
+  ).select("-password");
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, user, "Avatar updated Successfully"));
 });
 
 export {
@@ -276,7 +311,8 @@ export {
   loginUser,
   logoutUser,
   refreshAccessToken,
-  changeCurrentPassword,
-  changeFullName,
-  changeEmail
+  updateCurrentPassword,
+  updateFullName,
+  updateEmail,
+  updateAvatar,
 };

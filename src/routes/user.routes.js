@@ -3,9 +3,10 @@ import {
   registerUser,
   loginUser,
   logoutUser,
-  changeCurrentPassword,
-  changeFullName,
-  changeEmail,
+  updateCurrentPassword,
+  updateFullName,
+  updateEmail,
+  updateAvatar,
 } from "../controllers/user.controller.js";
 import { upload } from "../middleware/multer.middleware.js";
 import { verifyJwt } from "../middleware/auth.middleware.js";
@@ -30,7 +31,10 @@ router.route("/login").post(loginUser);
 //secure route
 router.route("/logout").post(verifyJwt, logoutUser);
 router.route("/refresh-token").post(refreshAccessToken);
-router.route("/change-password").post(verifyJwt, changeCurrentPassword);
-router.route("/change-fullname").post(verifyJwt, changeFullName);
-router.route("/change-email").post(verifyJwt, changeEmail);
+router.route("/update-password").post(verifyJwt, updateCurrentPassword);
+router.route("/update-fullname").post(verifyJwt, updateFullName);
+router.route("/update-email").post(verifyJwt, updateEmail);
+router
+  .route("/update-avatar")
+  .post(verifyJwt, upload.single("avatar"), updateAvatar);
 export default router;

@@ -17,6 +17,7 @@ export const verifyJwt = AsyncHandler(async (req, res, next) => {
 
     if (!token) {
       throw new ExpressError(httpStatus.UNAUTHORIZED, "Unauthorized request");
+      
     }
 
     const decodedToken = await jwt.verify(
