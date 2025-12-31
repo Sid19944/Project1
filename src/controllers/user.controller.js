@@ -58,7 +58,7 @@ const registerUser = AsyncHandler(async (req, res) => {
   // upload them to cloudinary, check have avatar
   const avatar = await uploadOnCloudinary(avatarLocalPath);
   const coverImage = await uploadOnCloudinary(coverImageLocalPath);
-  console.log(coverImage);
+  // console.log(coverImage);
   if (!avatar) {
     throw new ExpressError(400, "Avater file is required");
   }
@@ -306,6 +306,27 @@ const updateAvatar = AsyncHandler(async (req, res) => {
     .json(new ApiResponse(200, user, "Avatar updated Successfully"));
 });
 
+const updateCoverImage = AsyncHandler(async (req, res) => {
+  const coverImageLocalPath = req.file.path;
+  if (!coverImageLocalPath) {
+    throw new ExpressError(400, "CoverImage file is missing");
+  }
+  const coverImage = await uploadOnCloudinary(coverImageLocalPath);
+  if (!coverImage.url) {
+    throw new ExpressError(400, "Error while uploading avatar file");
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.user._id,
+    { $set: { coverImage: coverImage.url } },
+    { new: true }
+  ).select("-password");
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, user, "CoverImage updated Successfully"));
+});
+
 export {
   registerUser,
   loginUser,
@@ -315,4 +336,5 @@ export {
   updateFullName,
   updateEmail,
   updateAvatar,
+  updateCoverImage,
 };

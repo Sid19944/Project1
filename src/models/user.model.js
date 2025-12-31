@@ -30,7 +30,7 @@ const userSchema = new Schema(
       type: String, // cloudinary url
       required: [true, "avatar is required"],
     },
-    converImage: {
+    coverImage: {
       type: String,
     },
     watchHistory: [
