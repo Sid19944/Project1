@@ -33,13 +33,15 @@ router.route("/login").post(loginUser);
 //secure route
 router.route("/logout").post(verifyJwt, logoutUser);
 router.route("/refresh-token").post(refreshAccessToken);
-router.route("/get-current-user").post(verifyJwt,getCurrentUser);
-router.route("/update-password").post(verifyJwt, updateCurrentPassword);
-router.route("/update-fullname").post(verifyJwt, updateFullName);
-router.route("/update-email").post(verifyJwt, updateEmail);
+router.route("/get-current-user").get(verifyJwt, getCurrentUser);
+router.route("/update-password").patch(verifyJwt, updateCurrentPassword);
+router.route("/update-fullname").patch(verifyJwt, updateFullName);
+router.route("/update-email").patch(verifyJwt, updateEmail);
 router
   .route("/update-avatar")
   .post(verifyJwt, upload.single("avatar"), updateAvatar);
 
-router.route("/update-coverimage").post(verifyJwt, upload.single("coverImage"), updateCoverImage) 
+router
+  .route("/update-coverimage")
+  .post(verifyJwt, upload.single("coverImage"), updateCoverImage);
 export default router;
