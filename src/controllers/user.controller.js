@@ -150,12 +150,14 @@ const logoutUser = AsyncHandler(async (req, res) => {
   const updatedUser = await User.findByIdAndUpdate(
     req.user._id,
     {
-      refreshToken: null,
+      $unset: {
+        refreshToken: 1, // usend to remove from the db
+      },
     },
     { new: true }
   );
 
-  console.log(updatedUser);
+  // console.log(updatedUser);
 
   const cookieOption = {
     httpOnly: true,
