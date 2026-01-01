@@ -8,6 +8,7 @@ import {
 import { ApiResponse } from "../utils/ApiResponse.js";
 import httpStatus from "http-status";
 import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 
 const generateAccessAndRefreshToken = async (userId) => {
   try {
@@ -95,7 +96,10 @@ const loginUser = AsyncHandler(async (req, res) => {
   }
   // find the user in db using the user input details
   const user = await User.findOne({
-    $or: [{ username : username?.toLowerCase() }, { email: email?.toLowerCase() }],
+    $or: [
+      { username: username?.toLowerCase() },
+      { email: email?.toLowerCase() },
+    ],
   });
 
   if (!user) {
@@ -362,8 +366,8 @@ const getUserChannelProfile = AsyncHandler(async (req, res) => {
     {
       $lookup: {
         from: "subscriptions", // which collections to join
-        localField: "_id",  // this is the user's _id
-        foreignField: "channel",  // match the user's _id with the subscribtions collection's channle field and return into all document into an array that match withh the user's _id with channel's _Id
+        localField: "_id", // this is the user's _id
+        foreignField: "channel", // match the user's _id with the subscribtions collection's channle field and return into all document into an array that match withh the user's _id with channel's _Id
         as: "subscribers", // return into an array name as subscribers
       },
     },
@@ -377,7 +381,7 @@ const getUserChannelProfile = AsyncHandler(async (req, res) => {
         as: "subscribedTo", // return into an array name as subscribedTo
       },
     },
-    // creating new field 
+    // creating new field
     {
       $addFields: {
         // new field that store the size of the subscribers field array
@@ -388,7 +392,7 @@ const getUserChannelProfile = AsyncHandler(async (req, res) => {
         channelSubscribedToCount: {
           $size: "$subscribedTo",
         },
-        // checking is the login user is in our subscribers array 
+        // checking is the login user is in our subscribers array
         isSubscribed: {
           $cond: {
             if: { $in: [req.user?._id, "$subscribers.subscriber"] },
@@ -424,7 +428,59 @@ const getUserChannelProfile = AsyncHandler(async (req, res) => {
     );
 });
 
+const getWatchHistory = AsyncHandler(async (req, res) => {
+  const user = await User.aggregate([
+    {
+      $match: new mongoose.Types.ObjectId(req.user._id),
+    },
+    {
+      $lookup: {
+        from: "videos",
+        localField: "watchHistory",
+        foreignField: "_id",
+        as: "watchHistory",
+        pipeline: [
+          {
+            $lookup: {
+              from: "users",
+              localField: "owner",
+              foreignField: "_id",
+              as: owner,
+              pipeline: [
+                // use this pipeline
+                {
+                  $project: {
+                    fullName: 1,
+                    username: 1,
+                    avatar: 1,
+                  },
+                },
+              ],
+            },
+            // {} here from inside to outside
+          },
+          {
+            $addFields: {
+              owner: {
+                $first: "$owner",
+              },
+            },
+          },
+        ],
+      },
+    },
+  ]);
 
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        user[0].watchHistory,
+        "WatchHistory fetched successfully"
+      )
+    );
+});
 
 export {
   registerUser,
@@ -438,4 +494,5 @@ export {
   updateAvatar,
   updateCoverImage,
   getUserChannelProfile,
+  getWatchHistory,
 };
