@@ -95,7 +95,7 @@ const loginUser = AsyncHandler(async (req, res) => {
   }
   // find the user in db using the user input details
   const user = await User.findOne({
-    $or: [{ username }, { email: email.toLowerCase() }],
+    $or: [{ username : username?.toLowerCase() }, { email: email?.toLowerCase() }],
   });
 
   if (!user) {
