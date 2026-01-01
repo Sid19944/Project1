@@ -37,7 +37,9 @@ const registerUser = AsyncHandler(async (req, res) => {
     throw new ExpressError(400, "All feild are required");
   }
   // check if user already exist : username ,email
-  const existsUser = await User.findOne({ $or: [{ username }, { email }] });
+  const existsUser = await User.findOne({
+    $or: [{ username: username.toLowerCase() }, { email: email.toLowerCase() }],
+  });
 
   if (existsUser) {
     throw new ExpressError(409, "User with username or email already Exists");
@@ -71,7 +73,7 @@ const registerUser = AsyncHandler(async (req, res) => {
     username: username.toLowerCase(),
     avatar: avatar.secure_url,
     coverImage: coverImage?.secure_url || "",
-    email,
+    email: email.toLowerCase(),
     password,
   });
   // check for user creation and remove passward and refresh token feild from response
@@ -343,6 +345,87 @@ const updateCoverImage = AsyncHandler(async (req, res) => {
     .json(new ApiResponse(200, user, "CoverImage updated Successfully"));
 });
 
+const getUserChannelProfile = AsyncHandler(async (req, res) => {
+  const { username } = req.params;
+  if (!username?.trim()) {
+    throw new ExpressError(400, "Username is missing");
+  }
+
+  const channel = await User.aggregate([
+    // find the user from User collection using the username
+    {
+      $match: {
+        username: username?.toLowerCase(),
+      },
+    },
+    // fide how much document have my _id in the channel field from subscribtions collection
+    {
+      $lookup: {
+        from: "subscriptions", // which collections to join
+        localField: "_id",  // this is the user's _id
+        foreignField: "channel",  // match the user's _id with the subscribtions collection's channle field and return into all document into an array that match withh the user's _id with channel's _Id
+        as: "subscribers", // return into an array name as subscribers
+      },
+    },
+
+    // find how much document have my _id in the subscriber field from subscribtions collection
+    {
+      $lookup: {
+        from: "subscriptions", // which collections to join
+        localField: "_id", // this is the user's _id
+        foreignField: "subscriber", // match the user's _id with the subscribtions collection's subscriber field and return into all document into an array that match withh the user's _id with subscriber's _Id
+        as: "subscribedTo", // return into an array name as subscribedTo
+      },
+    },
+    // creating new field 
+    {
+      $addFields: {
+        // new field that store the size of the subscribers field array
+        subscribersCount: {
+          $size: "$subscribers",
+        },
+        // new field that store the size of the subscribedTo field array
+        channelSubscribedToCount: {
+          $size: "$subscribedTo",
+        },
+        // checking is the login user is in our subscribers array 
+        isSubscribed: {
+          $cond: {
+            if: { $in: [req.user?._id, "$subscribers.subscriber"] },
+            then: true,
+            else: false,
+          },
+        },
+      },
+    },
+    // what will be final output after aggragation complete, return object
+    {
+      $project: {
+        fullName: 1,
+        username: 1,
+        email: 1,
+        subscribersCount: 1,
+        channelSubscribedToCount: 1,
+        avatar: 1,
+        coverImage: 1,
+        isSubscribed: 1,
+      },
+    },
+  ]);
+
+  if (!channel.length) {
+    throw new ExpressError(400, " channel does not exists");
+  }
+  console.log(channel);
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, channel[0], "User channel fetched successfully")
+    );
+});
+
+
+
 export {
   registerUser,
   loginUser,
@@ -354,4 +437,5 @@ export {
   updateEmail,
   updateAvatar,
   updateCoverImage,
+  getUserChannelProfile,
 };
